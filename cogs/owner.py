@@ -37,8 +37,7 @@ class Owner(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    @commands.command(name='reload',
-                      description='Reloads the extension/module specified(use dot path: cogs.owner)',
+    @commands.command(name='reload', description='Reloads the extension/module specified(use dot path: cogs.owner)',
                       hidden=True)
     @commands.is_owner()
     async def reload(self, ctx, *cogs):
@@ -85,7 +84,8 @@ class Owner(commands.Cog):
         """Unloads a cog"""
         if len(cogs) > 0:
             try:
-                self.bot.unload_extension(cogs)
+                for cog in cogs:
+                    self.bot.load_extension(cog)
             except Exception as e:
                 await ctx.send(f'**`ERROR:`** {type(e).__name__} - {e}')
             else:

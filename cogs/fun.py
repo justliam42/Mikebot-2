@@ -9,6 +9,7 @@ options = [
                          description="A single piece of paper, dangerous when used to smother rock"),
     discord.SelectOption(label="Scissors", value="scissors",
                          description="A classic weapon which easily pierces through paper")]
+dad_words = ["im", "i'm", "i’m", "i am"]
 
 
 class Fun(commands.Cog):
@@ -27,6 +28,7 @@ class Fun(commands.Cog):
                       description='Play some rock paper scissors(the first 2 to respond are the challengers)')
     async def rockpaperscissors(self, ctx: commands.Context):
         """initiate rock paper scissors"""
+
         class rpsSelector(discord.ui.View):
             def __init__(self):
                 super().__init__()
@@ -67,14 +69,40 @@ class Fun(commands.Cog):
         for i in ctx.guild.members:
             if not i.bot and i.status is not discord.Status.offline:
                 pool.append(i)
-        await ctx.send(random.choice(pool).mention + " is " + arg)
+        message = await ctx.send(random.choice(pool).mention + " is " + arg,
+                                 allowed_mentions=discord.AllowedMentions(replied_user=False, users=[], roles=[],
+                                                                          everyone=False))
+        # edits the message to make it seem like a ping without notification. Mobile users would otherwise see
+        if "<@" in message.content and ">" in message.content:                                 # @invalid-user.
+            await message.edit(content=random.choice(pool).mention + " is " + arg,
+                               allowed_mentions=discord.AllowedMentions(replied_user=True, users=True, roles=True,
+                                                                        everyone=False))
 
     @commands.command(name='how',
                       aliases=['howmuch', 'whatpercent'],
                       description="Uses an advanced algorithm to determine the percentage of something")
     async def how(self, ctx: commands.Context, arg1: str, arg2: str):
         """Determines the percentage"""
-        await ctx.send(f"{arg2} is {random.randint(0, 100)}% {arg1}")
+        message = await ctx.send(f"{arg2} is {random.randint(0, 100)}% {arg1}",
+                                 allowed_mentions=discord.AllowedMentions(replied_user=False, users=[], roles=[],
+                                                                          everyone=False))
+        # edits the message to make it seem like a ping without notification. Mobile users would otherwise see
+        if "<@" in message.content and ">" in message.content:                                 # @invalid-user.
+            await message.edit(content=f"{arg2} is {random.randint(0, 100)}% {arg1}",
+                               allowed_mentions=discord.AllowedMentions(replied_user=True, users=True, roles=True,
+                                                                        everyone=False))
+
+    @commands.Cog.listener()
+    async def on_message(self, message: discord.Message):
+        if message.author == self.bot.user or message.author.bot:
+            return
+        dad = None
+        split_message = message.content.lower().split(" ")
+        for i in split_message:
+            if i in dad_words:
+                dad = message.content.lower().index(i) + len(i) + 1
+        if dad is not None:
+            await message.channel.send(f"Hi {message.content[dad:]}, im Mikebot")
 
 
 def setup(bot):
