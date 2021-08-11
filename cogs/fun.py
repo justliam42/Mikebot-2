@@ -69,12 +69,13 @@ class Fun(commands.Cog):
         for i in ctx.guild.members:
             if not i.bot and i.status is not discord.Status.offline:
                 pool.append(i)
-        message = await ctx.send(random.choice(pool).mention + " is " + arg,
+        choice = random.choice(pool)
+        message = await ctx.send(choice.mention + " is " + arg,
                                  allowed_mentions=discord.AllowedMentions(replied_user=False, users=[], roles=[],
                                                                           everyone=False))
         # edits the message to make it seem like a ping without notification. Mobile users would otherwise see
         if "<@" in message.content and ">" in message.content:                                 # @invalid-user.
-            await message.edit(content=random.choice(pool).mention + " is " + arg,
+            await message.edit(content=choice.mention + " is " + arg,
                                allowed_mentions=discord.AllowedMentions(replied_user=True, users=True, roles=True,
                                                                         everyone=False))
 
