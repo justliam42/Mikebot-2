@@ -11,7 +11,7 @@ description = "The Revival of Mikebot"
 version = 2.0
 bot = commands.Bot(command_prefix=commands.when_mentioned_or('?'), description=description, intents=intents)
 
-initial_extensions = ['cogs.moderation','cogs.owner','cogs.fun']
+initial_extensions = ['cogs.moderation','cogs.owner','cogs.fun','cogs.music']
 if __name__ == __name__: # loading the cogs
     for extension in initial_extensions:
         bot.load_extension(extension)
