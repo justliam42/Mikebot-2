@@ -2,17 +2,17 @@ from TicTacToe import TicTacToe
 from discord.ext import commands
 import random, discord
 
-options = [
-    discord.SelectOption(label="Rock", value="rock",
-                         description="A blunt material, capable of smashing through scissors"),
-    discord.SelectOption(label="Paper", value="paper",
-                         description="A single piece of paper, dangerous when used to smother rock"),
-    discord.SelectOption(label="Scissors", value="scissors",
-                         description="A classic weapon which easily pierces through paper")]
-dad_words = ["im", "i'm", "i’m", "i am"]
+dad_words = ["im", "i'm", u"i’m", "i am"]
 
 
 class Fun(commands.Cog):
+    options = [
+        discord.SelectOption(label="Rock", value="rock",
+                             description="A blunt material, capable of smashing through scissors"),
+        discord.SelectOption(label="Paper", value="paper",
+                             description="A single piece of paper, dangerous when used to smother rock"),
+        discord.SelectOption(label="Scissors", value="scissors",
+                             description="A classic weapon which easily pierces through paper")]
     def __init__(self, bot):
         self.bot = bot
 
@@ -84,12 +84,13 @@ class Fun(commands.Cog):
                       description="Uses an advanced algorithm to determine the percentage of something")
     async def how(self, ctx: commands.Context, arg1: str, arg2: str):
         """Determines the percentage"""
-        message = await ctx.send(f"{arg2} is {random.randint(0, 100)}% {arg1}",
+        percent = random.randint(0, 100)
+        message = await ctx.send(f"{arg2} is {percent}% {arg1}",
                                  allowed_mentions=discord.AllowedMentions(replied_user=False, users=[], roles=[],
                                                                           everyone=False))
         # edits the message to make it seem like a ping without notification. Mobile users would otherwise see
         if "<@" in message.content and ">" in message.content:                                 # @invalid-user.
-            await message.edit(content=f"{arg2} is {random.randint(0, 100)}% {arg1}",
+            await message.edit(content=f"{arg2} is {percent}% {arg1}",
                                allowed_mentions=discord.AllowedMentions(replied_user=True, users=True, roles=True,
                                                                         everyone=False))
 
