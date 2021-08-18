@@ -37,7 +37,8 @@ class Moderation(commands.Cog):
 
     @commands.command(name='autorole',
                       aliases=['AutoRole', 'arole'],
-                      description='Set or Remove roles the get automatically assigned on joining the server')
+                      description='Set or Remove roles the get automatically assigned on joining the server\nnote: when using the "view" argument, a role does not need to be specified',
+                      usage=f"[add|remove|view] [role]")
     @commands.has_permissions(manage_messages=True)
     async def auto_role(self, ctx: commands.Context, arg1: str, *arg2: str):
         """Assign roles on joining"""
@@ -110,10 +111,12 @@ class Moderation(commands.Cog):
             for i in autoRole[str(member.guild.id)]:
                 await member.add_roles(get_role(i, member.guild), reason="autorole")
 
-    @commands.command(name='selfrole') # the rest of this cog is for self role
+    @commands.command(name='selfrole',
+                      aliases = ['rolereactions','srole'],
+                      description = 'Creates a message that assigns users certain roles on their reaction to the appropriate emote')  # the rest of this cog is for self role
     @commands.has_permissions(manage_messages=True, manage_roles=True)
     async def selfrole(self, ctx: commands.Context, title: str, *roles):
-
+        """creates a selfrole message"""
         try:
             with open("selfrole.json") as file:
                 json.load(file)
@@ -225,7 +228,13 @@ class Moderation(commands.Cog):
                 channel = self.bot.get_channel(int(channel_id))
                 for message_id in self_role[guild_id][channel_id]:
                     data = self_role[guild_id][channel_id][message_id]
-                    message = await channel.fetch_message(int(message_id))
+                    try:
+                        message = await channel.fetch_message(int(message_id))
+                    except discord.errors.NotFound:
+                        del self_role[guild_id][channel_id][message_id]
+                        with open("selfrole.json", 'w') as f:
+                            json.dump(self_role, f, indent=4)
+                        return
                     role_ids = list(map(int, data['roles']))
                     roles = list(map(guild.get_role, role_ids))
                     for member in guild.members:
@@ -235,6 +244,8 @@ class Moderation(commands.Cog):
                             if reaction.emoji in emotes:
                                 users = []
                                 async for user in reaction.users():
+                                    if user == self.bot.user or user.bot:
+                                        continue
                                     if member == user and role not in member.roles:
                                         await member.add_roles(role)
                                     users.append(user)
@@ -242,7 +253,7 @@ class Moderation(commands.Cog):
                                     await member.remove_roles(role)
 
     @commands.Cog.listener()
-    async def on_raw_message_delete(self, payload:discord.RawMessageDeleteEvent):
+    async def on_raw_message_delete(self, payload: discord.RawMessageDeleteEvent):
         try:
             with open("selfrole.json") as file:
                 json.load(file)
@@ -257,5 +268,7 @@ class Moderation(commands.Cog):
             del self_role[str(payload.guild_id)][str(payload.channel_id)][str(payload.message_id)]
         with open("selfrole.json", 'w') as f:
             json.dump(self_role, f, indent=4)
+
+
 def setup(bot):
     bot.add_cog(Moderation(bot))
