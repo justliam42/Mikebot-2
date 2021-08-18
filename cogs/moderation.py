@@ -102,6 +102,8 @@ class Moderation(commands.Cog):
 
     @commands.Cog.listener()  # autorole logic
     async def on_member_join(self, member: discord.Member):
+        if member == self.bot.user or member.bot:
+            return
         with open("autorole.json", 'r') as f:
             autoRole = json.load(f)  # autorole is the json object containing an [{guild_id:[role_ids]},etc]
         if str(member.guild.id) in autoRole:
@@ -154,6 +156,10 @@ class Moderation(commands.Cog):
 
     @commands.Cog.listener()
     async def on_raw_reaction_add(self, payload: discord.RawReactionActionEvent):
+        user = self.bot.get_user(payload.user_id)
+        if user == self.bot.user or user.bot:
+            return
+        del user
         try:
             with open("selfrole.json") as file:
                 json.load(file)
@@ -175,6 +181,10 @@ class Moderation(commands.Cog):
 
     @commands.Cog.listener()
     async def on_raw_reaction_remove(self, payload: discord.RawReactionActionEvent):
+        user = self.bot.get_user(payload.user_id)
+        if user == self.bot.user or user.bot:
+            return
+        del user
         try:
             with open("selfrole.json") as file:
                 json.load(file)
