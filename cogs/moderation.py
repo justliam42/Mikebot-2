@@ -133,6 +133,7 @@ class Moderation(commands.Cog):
             random_emote = random.choice(emojis)
             role_emoji_nums.append(random_emote)
             role_emojis.append(chr(random_emote))
+            emojis.remove(random_emote)
 
         text = f"{title}"
         for i in range(len(self_roles)):
