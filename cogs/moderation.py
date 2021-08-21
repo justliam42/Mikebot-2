@@ -6,6 +6,7 @@ import random
 
 
 def get_role(role: str, guild: discord.Guild) -> Union[discord.Role, None]:
+    role = str(role)
     if len(role) > 0:
         try:
             role_id = int("".join(filter(str.isdigit, role)))
@@ -76,7 +77,7 @@ class Moderation(commands.Cog):
                 with open("autorole.json", 'r') as f:
                     autoRole = json.load(f)  # autorole is the json object containing an [{guild_id:[role_ids]},etc]
                 if str(ctx.guild.id) in autoRole and role.id in autoRole[str(ctx.guild.id)]:
-                    autoRole[str(ctx.guild.id)].remove(role_id)
+                    autoRole[str(ctx.guild.id)].remove(str(role.id))
                 else:
                     await ctx.send(f"this role isnt in the autorole list({ctx.prefix}autorole view)")
                 with open("autorole.json", 'w') as f:
@@ -92,9 +93,9 @@ class Moderation(commands.Cog):
             if str(ctx.guild.id) in autoRole and len(autoRole[str(ctx.guild.id)]) >= 1:
                 message = ""
                 for i in autoRole[str(ctx.guild.id)]:
-                    message += ctx.guild.get_role(i).mention + "\n"
+                    message += "- " + ctx.guild.get_role(i).mention + "\n"
                 await ctx.send(
-                    embed=discord.Embed(title=f"autoroles for {ctx.guild.name}", description=message, color=1304659))
+                    embed=discord.Embed(title=f"Autoroles for {ctx.guild.name}: ", description=message, color=1304659))
             else:
                 await ctx.send("no autoroles have been set up yet")
             pass
