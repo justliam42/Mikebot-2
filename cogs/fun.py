@@ -1,18 +1,38 @@
-from TicTacToe import TicTacToe
+import asyncio
+import random
+from typing import Optional
+
+import discord
 from discord.ext import commands
-import random, discord
+
+from TicTacToe import TicTacToe
+from cogs.extra.erpsLib import erps_game
 
 dad_words = ["im", "i'm", u"i’m", "i am"]
+options = [
+    discord.SelectOption(label="Rock", value="rock",
+                         description="A blunt material, capable of smashing through scissors"),
+    discord.SelectOption(label="Paper", value="paper",
+                         description="A single piece of paper, dangerous when used to smother rock"),
+    discord.SelectOption(label="Scissors", value="scissors",
+                         description="A classic weapon which easily pierces through paper")]
+erps_games = []
+
+
+def get_user_from_mention(user: str, bot: discord.ext.commands.Bot) -> Optional[discord.User]:
+    user = str(user)
+    if len(user) > 0:
+        try:
+            user_id = int("".join(filter(str.isdigit, user)))
+        except ValueError:
+            return None
+    else:
+        return None
+    return bot.get_user(user_id)
 
 
 class Fun(commands.Cog):
-    options = [
-        discord.SelectOption(label="Rock", value="rock",
-                             description="A blunt material, capable of smashing through scissors"),
-        discord.SelectOption(label="Paper", value="paper",
-                             description="A single piece of paper, dangerous when used to smother rock"),
-        discord.SelectOption(label="Scissors", value="scissors",
-                             description="A classic weapon which easily pierces through paper")]
+
     def __init__(self, bot):
         self.bot = bot
 
@@ -74,7 +94,7 @@ class Fun(commands.Cog):
                                  allowed_mentions=discord.AllowedMentions(replied_user=False, users=[], roles=[],
                                                                           everyone=False))
         # edits the message to make it seem like a ping without notification. Mobile users would otherwise see
-        if "<@" in message.content and ">" in message.content:                                 # @invalid-user.
+        if "<@" in message.content and ">" in message.content:  # @invalid-user.
             await message.edit(content=choice.mention + " is " + arg,
                                allowed_mentions=discord.AllowedMentions(replied_user=True, users=True, roles=True,
                                                                         everyone=False))
@@ -89,10 +109,64 @@ class Fun(commands.Cog):
                                  allowed_mentions=discord.AllowedMentions(replied_user=False, users=[], roles=[],
                                                                           everyone=False))
         # edits the message to make it seem like a ping without notification. Mobile users would otherwise see
-        if "<@" in message.content and ">" in message.content:                                 # @invalid-user.
+        if "<@" in message.content and ">" in message.content:  # @invalid-user.
             await message.edit(content=f"{arg2} is {percent}% {arg1}",
                                allowed_mentions=discord.AllowedMentions(replied_user=True, users=True, roles=True,
                                                                         everyone=False))
+
+    @commands.command(name='extremerockpaperscissors',
+                      aliases=['erps', 'ExtremeRockPaperScissors'],
+                      description='Play a game of extreme rock paper scissors',
+                      usage='[points to win a round]')
+    async def extremerockpaperscissors(self, ctx: commands.Context, opponent: str, *, rounds=None):
+        """initiate **extreme** rock paper scissors"""
+        opponent = get_user_from_mention(opponent, self.bot)
+        if opponent is None:
+            await ctx.channel.send("please challenge a valid user")
+            return
+        if opponent.id == ctx.author.id:
+            await ctx.channel.send("You can't challenge yourself")
+            return
+        for i in erps_games:
+            for p in [i.player1,i.player2]:
+                if p.user.id == ctx.author.id:
+                    await ctx.channel.send("You are already playing a game")
+                    return
+                if p.user.id == opponent.id:
+                    await ctx.channel.send(f"{opponent.display_name} is already playing a game")
+                    return
+
+        def check(msg):
+            if msg.author.id == ctx.author.id and msg.channel.id == ctx.channel.id:
+                return True
+            else:
+                return False
+
+        if rounds is not None:
+            try:
+                rounds = int(rounds)
+            except ValueError:
+                await ctx.channel.send("please send a valid number of rounds or dont send one at all")
+                return
+            game = erps_game(ctx.author, opponent, rounds, ctx.channel, self.bot)
+        else:
+            stuff = await ctx.send("Type the number of points to win a round(traditional is 26)")
+            try:
+                rounds_message = await self.bot.wait_for('message', check=check, timeout=30)
+            except asyncio.TimeoutError:
+                await stuff.edit(content="The command has timed out")
+                await stuff.delete(delay=10)
+                return
+            try:
+                rounds = int(rounds_message.content)
+                game = erps_game(ctx.author, opponent, rounds, ctx.channel, self.bot)
+            except ValueError:
+                await ctx.channel.send("invalid number")
+                return
+
+        erps_games.append(game)
+        await game.start()
+        erps_games.remove(game)
 
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
