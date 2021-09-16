@@ -224,7 +224,7 @@ class erps_game:
         tasks2 = [asyncio.create_task(asyncio.wait(tasks, return_when=ALL_COMPLETED)),
                   asyncio.create_task(self.bot.wait_for('message', check=abort_check))]
         # try:
-        done, _ = await asyncio.wait(tasks2, return_when=FIRST_COMPLETED, timeout=60)
+        done, _ = await asyncio.wait(tasks2, return_when=FIRST_COMPLETED, timeout=180)
         if done == set():
             for p in [self.player1, self.player2]:
                 await p.dmChannel.send("The game has timed out and has been aborted")
@@ -347,7 +347,7 @@ class erps_game:
             points2 = 0
             while True:
                 tasks = [dm_rps_options(self.player1), dm_rps_options(self.player2)]
-                option1, _ = await asyncio.wait(tasks, return_when=ALL_COMPLETED, timeout=60)
+                option1, _ = await asyncio.wait(tasks, return_when=ALL_COMPLETED, timeout=180)
                 if len(list(option1)) < 2:
                     for p in [self.player1, self.player2]:
                         await p.dmChannel.send("The game has timed out and has been aborted")
