@@ -355,18 +355,18 @@ class erps_game:
                     self.aborted = True
                     return
                 options = list(option1)
-                if options[0].result()[1] == self.player1.user.id:
-                    player1 = options[0].result()[1]
+                print(type(options[0].result()[1]), options[1].result()[1])
+                print(self.player1.user.id == options[0].result()[1])
+                if int(options[0].result()[1]) == self.player1.user.id:
                     selected1 = options[0].result()[0]
-                    player2 = options[1].result()[0]
                     selected2 = options[1].result()[0]
                 else:
-                    player2 = options[0].result()[1]
                     selected2 = options[0].result()[0]
-                    player1 = options[1].result()[0]
                     selected1 = options[1].result()[0]
-                player2 = self.player2
+
                 player1 = self.player1
+                player2 = self.player2
+
                 if rps.index(selected1) - 1 == rps.index(selected2) or rps.index(selected1) + 2 == rps.index(selected2):
                     points1 += 1
                     await player1.dmChannel.send(
@@ -397,6 +397,7 @@ class erps_game:
                 self.player2.points += 1
                 self.player2.pointsWon = 1
                 self.player1.pointsWon = None
+
         elif (self.player1.selectedOption == 'gun' and self.player2.selectedOption == 'motorcycle') or (
                 self.player1.selectedOption == 'motorcycle' and self.player2.selectedOption == 'gun') or (
                 self.player1.selectedOption == 'hand sanitizer' and self.player2.selectedOption == 'chainsaw') or (
