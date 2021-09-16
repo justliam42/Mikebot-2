@@ -90,14 +90,14 @@ class Fun(commands.Cog):
             if not i.bot and i.status is not discord.Status.offline:
                 pool.append(i)
         choice = random.choice(pool)
-        message = await ctx.send(choice.mention + " is " + arg,
-                                 allowed_mentions=discord.AllowedMentions(replied_user=False, users=[], roles=[],
-                                                                          everyone=False))
-        # edits the message to make it seem like a ping without notification. Mobile users would otherwise see
-        if "<@" in message.content and ">" in message.content:  # @invalid-user.
-            await message.edit(content=choice.mention + " is " + arg,
-                               allowed_mentions=discord.AllowedMentions(replied_user=True, users=True, roles=True,
-                                                                        everyone=False))
+
+        content = choice.mention + " is " + arg
+        if len(ctx.message.mentions) > 0:
+            for i in ctx.message.mentions:
+                content = content.replace(i.mention, i.display_name)
+
+        message = await ctx.send(content, allowed_mentions=discord.AllowedMentions(roles=False,
+                                                                                   everyone=False))
 
     @commands.command(name='how',
                       aliases=['howmuch', 'whatpercent'],
@@ -105,14 +105,12 @@ class Fun(commands.Cog):
     async def how(self, ctx: commands.Context, arg1: str, arg2: str):
         """Determines the percentage"""
         percent = random.randint(0, 100)
-        message = await ctx.send(f"{arg2} is {percent}% {arg1}",
-                                 allowed_mentions=discord.AllowedMentions(replied_user=False, users=[], roles=[],
-                                                                          everyone=False))
-        # edits the message to make it seem like a ping without notification. Mobile users would otherwise see
-        if "<@" in message.content and ">" in message.content:  # @invalid-user.
-            await message.edit(content=f"{arg2} is {percent}% {arg1}",
-                               allowed_mentions=discord.AllowedMentions(replied_user=True, users=True, roles=True,
-                                                                        everyone=False))
+        content = f"{arg2} is {percent}% {arg1}"
+        if len(ctx.message.mentions) > 0:
+            for i in ctx.message.mentions:
+                content = content.replace(i.mention, i.display_name)
+        message = await ctx.send(content, allowed_mentions=discord.AllowedMentions(roles=False,
+                                                                                   everyone=False))
 
     @commands.command(name='extremerockpaperscissors',
                       aliases=['erps', 'ExtremeRockPaperScissors'],
@@ -128,7 +126,7 @@ class Fun(commands.Cog):
             await ctx.channel.send("You can't challenge yourself")
             return
         for i in erps_games:
-            for p in [i.player1,i.player2]:
+            for p in [i.player1, i.player2]:
                 if p.user.id == ctx.author.id:
                     await ctx.channel.send("You are already playing a game")
                     return

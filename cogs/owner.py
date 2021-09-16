@@ -1,7 +1,6 @@
 import discord
 from discord.ext import commands
 
-
 class CogOptions(discord.ui.Button):
     def __init__(self, Cog, bot, ctx, mode: int):
         super().__init__()
@@ -36,6 +35,34 @@ class Owner(commands.Cog):
 
     def __init__(self, bot):
         self.bot = bot
+
+    @commands.command(name='remove', description='Remove a command from usage',hidden=True)
+    @commands.is_owner()
+    async def remove(self, ctx, command):
+        """Removes a command"""
+        try:
+            for i in self.bot.commands:
+                if i.name == command or command in i.aliases:
+                    print(i.cog)
+                    i.enabled=False
+                    await ctx.send('**`SUCCESS`**')
+
+        except Exception as e:
+            await ctx.send(f'**`ERROR:`** {type(e).__name__} - {e}')
+
+
+    @commands.command(name='add', description='Add a command from usage',hidden=True)
+    @commands.is_owner()
+    async def add(self, ctx, command):
+        """Adds a command"""
+        try:
+            for i in self.bot.commands:
+                if i.name == command or command in i.aliases:
+                    i.enabled=True
+                    await ctx.send('**`SUCCESS`**')
+
+        except Exception as e:
+            await ctx.send(f'**`ERROR:`** {type(e).__name__} - {e}')
 
     @commands.command(name='reload', description='Reloads the extension/module specified(use dot path: cogs.owner)',
                       hidden=True)
