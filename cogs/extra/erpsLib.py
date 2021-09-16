@@ -320,8 +320,8 @@ class erps_game:
                 ants = self.player1
                 brits = self.player2
             else:
-                brits = self.player2
-                ants = self.player1
+                brits = self.player1
+                ants = self.player2
             await ants.dmChannel.send(f"{brits.user.display_name} played british people. They **won 2 points**")
             await brits.dmChannel.send(f"{ants.user.display_name} played ants. You **won 2 points**")
             brits.points += 2
@@ -347,22 +347,26 @@ class erps_game:
             points2 = 0
             while True:
                 tasks = [dm_rps_options(self.player1), dm_rps_options(self.player2)]
-                option1, _ = await asyncio.wait(tasks, return_when=ALL_COMPLETED)
-                if option1 == set():
+                option1, _ = await asyncio.wait(tasks, return_when=ALL_COMPLETED, timeout=60)
+                if len(list(option1)) < 2:
                     for p in [self.player1, self.player2]:
                         await p.dmChannel.send("The game has timed out and has been aborted")
                     await self.statusMessage.edit("The Game Timed Out")
                     self.aborted = True
                     return
                 options = list(option1)
-                player1 = options[0].result()[1]
-                selected1 = options[0].result()[0]
-                player2 = options[1].result()[0]
-                selected2 = options[1].result()[0]
-                if player1 == self.player1.user.id:
-                    player1, player2 = self.player1, self.player2
+                if options[0].result()[1] == self.player1.user.id:
+                    player1 = options[0].result()[1]
+                    selected1 = options[0].result()[0]
+                    player2 = options[1].result()[0]
+                    selected2 = options[1].result()[0]
                 else:
-                    player1, player2 = self.player2, self.player1
+                    player2 = options[0].result()[1]
+                    selected2 = options[0].result()[0]
+                    player1 = options[1].result()[0]
+                    selected1 = options[1].result()[0]
+                player2 = self.player2
+                player1 = self.player1
                 if rps.index(selected1) - 1 == rps.index(selected2) or rps.index(selected1) + 2 == rps.index(selected2):
                     points1 += 1
                     await player1.dmChannel.send(
@@ -703,14 +707,14 @@ class erps_game:
             self.player1.points, self.player2.points = 0, 0
 
         if self.player1.roundsWon >= 2:
-            await self.player1.dmChannel.send("You won the game. congrats!")
-            await self.player2.dmChannel.send("You lost the game...")
+            await self.player1.dmChannel.send("**You won the game. congrats!**")
+            await self.player2.dmChannel.send("**You lost the game...**")
             await self.statusMessage.edit(embed=self.get_embed())
             await self.channel.send(
                 f"{self.player1.user.mention} has won Extreme Rock Paper Scissors against {self.player2.user.mention}")
         else:
-            await self.player2.dmChannel.send("You won the game. congrats!")
-            await self.player1.dmChannel.send("You lost the game...")
+            await self.player2.dmChannel.send("**You won the game. congrats!**")
+            await self.player1.dmChannel.send("**You lost the game...**")
             await self.statusMessage.edit(embed=self.get_embed())
             await self.channel.send(
                 f"{self.player2.user.mention} has won Extreme Rock Paper Scissors against {self.player1.user.mention}")
