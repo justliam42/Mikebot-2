@@ -1,8 +1,11 @@
+import asyncio
+
 from discord.ext import commands
 import json
 import discord
 from typing import Union
 import random
+import datetime
 
 
 def get_role(role: str, guild: discord.Guild) -> Union[discord.Role, None]:
@@ -270,6 +273,45 @@ class Moderation(commands.Cog):
         with open("selfrole.json", 'w') as f:
             json.dump(self_role, f, indent=4)
 
+    @commands.command(name='studysession',
+                      aliases=['study', 'rolevc'],
+                      description='Creates and schedules a study session')  # the rest of this cog is for self role
+    @commands.has_permissions(manage_channels=True, manage_roles=True)
+    async def studysession(self, ctx):
+        now = datetime.datetime.now()
+        # await ctx.channel.send("type the starting time of the study session(use military time for now)")
+        def check(msg):
+            if msg.author == ctx.author:
+                return True
+            else:
+                return False
+        # message = await self.bot.wait_for('message', check=check)
+        # try:
+        #     start_time = datetime.datetime.strptime(message.content,"%H:%M")
+        #     start_time = datetime.timedelta(hours=start_time.hour, minutes=start_time.minute) + now
+        # except ValueError:
+        #     await ctx.channel.send("Incorrect Format")
+        #     return
+        # if start_time < now:
+        #     start_time += datetime.timedelta(days=1)
 
+        await ctx.channel.send("type the length of the study session(minutes)")
+        message = await self.bot.wait_for('message', check=check)
+        try:
+            length = int(message.content)
+        except TypeError:
+            await ctx.channel.send("Incorrect Format")
+            return
+
+
+        # if start_time - datetime.timedelta(minutes=5) < now:
+        #     await ctx.channel.category.create_voice_channel(f"{ctx.channel.name} study session", overwrites=ctx.channel.overwrites, position=ctx.channel.position + 1)
+        # else:
+        #     print('d')
+        #     await asyncio.sleep(((start_time-datetime.timedelta(minutes=5))-now).seconds)
+        #     await ctx.channel.category.create_voice_channel(f"{ctx.channel.name} study session", overwrites=ctx.channel.overwrites, position=ctx.channel.position + 1)
+        vc = await ctx.channel.category.create_voice_channel(f"{ctx.channel.name} study session", overwrites=ctx.channel.overwrites, position=ctx.channel.position + 1)
+        await asyncio.sleep(length*60)
+        await vc.delete()
 def setup(bot):
     bot.add_cog(Moderation(bot))
