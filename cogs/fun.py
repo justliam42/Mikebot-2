@@ -7,7 +7,7 @@ from typing import Optional
 import discord
 from discord.ext import commands
 
-from TicTacToe import TicTacToe
+from cogs.extra.TicTacToe import TicTacToe
 from cogs.extra.erpsLib import erps_game
 
 dad_words = ["im", "i'm", u"i’m", "i am"]
