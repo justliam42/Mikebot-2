@@ -1,11 +1,13 @@
 import asyncio
-
-from discord.ext import commands
 import json
-import discord
-from typing import Union
 import random
-import datetime
+from typing import Union
+
+import discord
+from discord.ext import commands
+
+autorole_json = "data/autorole.json"
+selfrole_json = "data/selfrole.json"
 
 
 def get_role(role: str, guild: discord.Guild) -> Union[discord.Role, None]:
@@ -47,10 +49,10 @@ class Moderation(commands.Cog):
     async def auto_role(self, ctx: commands.Context, arg1: str, *arg2: str):
         """Assign roles on joining"""
         try:
-            with open("autorole.json") as file:
+            with open(autorole_json) as file:
                 json.load(file)
         except (FileNotFoundError, json.JSONDecodeError):
-            with open("autorole.json", "w") as file:
+            with open(autorole_json, "w") as file:
                 json.dump({}, file)
 
         role = None
@@ -60,7 +62,7 @@ class Moderation(commands.Cog):
         if arg1 == "add":
             if role is not None:
                 autoRole = None
-                with open("autorole.json", 'r') as f:
+                with open(autorole_json, 'r') as f:
                     autoRole = json.load(f)  # autorole is the json object containing an [{guild_id:[role_ids]},etc]
                 if str(ctx.guild.id) not in autoRole:
                     autoRole[str(ctx.guild.id)] = []
@@ -68,7 +70,7 @@ class Moderation(commands.Cog):
                     await ctx.send(f"role is already in the list({ctx.prefix}autorole view)")
                     return
                 autoRole[str(ctx.guild.id)].append(role.id)
-                with open("autorole.json", 'w') as f:
+                with open(autorole_json, 'w') as f:
                     json.dump(autoRole, f, indent=4)
                 await ctx.send("**`done`**")
             else:
@@ -77,13 +79,13 @@ class Moderation(commands.Cog):
         elif arg1 in ['remove', 'subtract', 'minus', 'clear', 'purge']:
             if role is not None:
                 autoRole = None
-                with open("autorole.json", 'r') as f:
+                with open(autorole_json, 'r') as f:
                     autoRole = json.load(f)  # autorole is the json object containing an [{guild_id:[role_ids]},etc]
                 if str(ctx.guild.id) in autoRole and role.id in autoRole[str(ctx.guild.id)]:
-                    autoRole[str(ctx.guild.id)].remove(str(role.id))
+                    autoRole[str(ctx.guild.id)].remove(role.id)
                 else:
                     await ctx.send(f"this role isnt in the autorole list({ctx.prefix}autorole view)")
-                with open("autorole.json", 'w') as f:
+                with open(autorole_json, 'w') as f:
                     json.dump(autoRole, f, indent=4)
                 await ctx.send("**`done`**")
 
@@ -91,7 +93,7 @@ class Moderation(commands.Cog):
                 await ctx.send("invalid role")
                 return
         elif arg1 in ["view", "see", "observe", "list"]:
-            with open("autorole.json", 'r') as f:
+            with open(autorole_json, 'r') as f:
                 autoRole = json.load(f)  # autorole is the json object containing an [{guild_id:[role_ids]},etc]
             if str(ctx.guild.id) in autoRole and len(autoRole[str(ctx.guild.id)]) >= 1:
                 message = ""
@@ -107,25 +109,30 @@ class Moderation(commands.Cog):
 
     @commands.Cog.listener()  # autorole logic
     async def on_member_join(self, member: discord.Member):
+        try:
+            with open(autorole_json) as file:
+                json.load(file)
+        except (FileNotFoundError, json.JSONDecodeError):
+            return
         if member == self.bot.user or member.bot:
             return
-        with open("autorole.json", 'r') as f:
+        with open(autorole_json, 'r') as f:
             autoRole = json.load(f)  # autorole is the json object containing an [{guild_id:[role_ids]},etc]
         if str(member.guild.id) in autoRole:
             for i in autoRole[str(member.guild.id)]:
                 await member.add_roles(get_role(i, member.guild), reason="autorole")
 
     @commands.command(name='selfrole',
-                      aliases = ['rolereactions','srole'],
-                      description = 'Creates a message that assigns users certain roles on their reaction to the appropriate emote')  # the rest of this cog is for self role
+                      aliases=['rolereactions', 'srole'],
+                      description='Creates a message that assigns users certain roles on their reaction to the appropriate emote')  # the rest of this cog is for self role
     @commands.has_permissions(manage_messages=True, manage_roles=True)
     async def selfrole(self, ctx: commands.Context, title: str, *roles):
         """creates a selfrole message"""
         try:
-            with open("selfrole.json") as file:
+            with open(selfrole_json) as file:
                 json.load(file)
         except (FileNotFoundError, json.JSONDecodeError):
-            with open("selfrole.json", "w") as file:
+            with open(selfrole_json, "w") as file:
                 json.dump({}, file)
 
         self_roles = []
@@ -148,7 +155,7 @@ class Moderation(commands.Cog):
         message = await ctx.send(text)
         for i in role_emojis:
             await message.add_reaction(i)
-        with open("selfrole.json", 'r') as f:
+        with open(selfrole_json, 'r') as f:
             self_role = json.load(f)
         if str(ctx.guild.id) not in self_role:
             self_role[str(ctx.guild.id)] = {}
@@ -159,23 +166,23 @@ class Moderation(commands.Cog):
             role_ids.append(i.id)
         self_role[str(ctx.guild.id)][str(ctx.channel.id)][str(message.id)] = {'emotes': role_emoji_nums,
                                                                               'roles': role_ids}
-        with open("selfrole.json", 'w') as f:
+        with open(selfrole_json, 'w') as f:
             json.dump(self_role, f, indent=4)
 
     @commands.Cog.listener()
     async def on_raw_reaction_add(self, payload: discord.RawReactionActionEvent):
+        try:
+            with open(selfrole_json) as file:
+                json.load(file)
+        except (FileNotFoundError, json.JSONDecodeError):
+            return
+
         user = self.bot.get_user(payload.user_id)
         if user == self.bot.user or user.bot:
             return
         del user
-        try:
-            with open("selfrole.json") as file:
-                json.load(file)
-        except (FileNotFoundError, json.JSONDecodeError):
-            with open("selfrole.json", "w") as file:
-                json.dump({}, file)
 
-        with open("selfrole.json", 'r') as f:
+        with open(selfrole_json, 'r') as f:
             self_role = json.load(f)
 
         if str(payload.guild_id) in self_role and str(payload.channel_id) in self_role[str(payload.guild_id)] and str(
@@ -194,13 +201,12 @@ class Moderation(commands.Cog):
             return
         del user
         try:
-            with open("selfrole.json") as file:
+            with open(selfrole_json) as file:
                 json.load(file)
         except (FileNotFoundError, json.JSONDecodeError):
-            with open("selfrole.json", "w") as file:
-                json.dump({}, file)
+            return
 
-        with open("selfrole.json", 'r') as f:
+        with open(selfrole_json, 'r') as f:
             self_role = json.load(f)
 
         if str(payload.guild_id) in self_role and str(payload.channel_id) in self_role[str(payload.guild_id)] and str(
@@ -217,13 +223,12 @@ class Moderation(commands.Cog):
     @commands.Cog.listener()
     async def on_ready(self):
         try:
-            with open("selfrole.json") as file:
+            with open(selfrole_json) as file:
                 json.load(file)
         except (FileNotFoundError, json.JSONDecodeError):
-            with open("selfrole.json", "w") as file:
-                json.dump({}, file)
+            return
 
-        with open("selfrole.json", 'r') as f:
+        with open(selfrole_json, 'r') as f:
             self_role = json.load(f)
 
         for guild_id in self_role:
@@ -236,7 +241,7 @@ class Moderation(commands.Cog):
                         message = await channel.fetch_message(int(message_id))
                     except discord.errors.NotFound:
                         del self_role[guild_id][channel_id][message_id]
-                        with open("selfrole.json", 'w') as f:
+                        with open(selfrole_json, 'w') as f:
                             json.dump(self_role, f, indent=4)
                         return
                     role_ids = list(map(int, data['roles']))
@@ -259,18 +264,17 @@ class Moderation(commands.Cog):
     @commands.Cog.listener()
     async def on_raw_message_delete(self, payload: discord.RawMessageDeleteEvent):
         try:
-            with open("selfrole.json") as file:
+            with open(selfrole_json) as file:
                 json.load(file)
         except (FileNotFoundError, json.JSONDecodeError):
-            with open("selfrole.json", "w") as file:
-                json.dump({}, file)
+            return
 
-        with open("selfrole.json", 'r') as f:
+        with open(selfrole_json, 'r') as f:
             self_role = json.load(f)
         if str(payload.guild_id) in self_role and str(payload.channel_id) in self_role[str(payload.guild_id)] and str(
                 payload.message_id) in self_role[str(payload.guild_id)][str(payload.channel_id)]:
             del self_role[str(payload.guild_id)][str(payload.channel_id)][str(payload.message_id)]
-        with open("selfrole.json", 'w') as f:
+        with open(selfrole_json, 'w') as f:
             json.dump(self_role, f, indent=4)
 
     @commands.command(name='studysession',
@@ -285,6 +289,7 @@ class Moderation(commands.Cog):
                 length = words[1]
             else:
                 await ctx.send("Please only use 1 argument")
+
         # now = datetime.datetime.now()
         # await ctx.channel.send("type the starting time of the study session(use military time for now)")
         def check(msg):
@@ -292,6 +297,7 @@ class Moderation(commands.Cog):
                 return True
             else:
                 return False
+
         # message = await self.bot.wait_for('message', check=check)
         # try:
         #     start_time = datetime.datetime.strptime(message.content,"%H:%M")
@@ -313,15 +319,18 @@ class Moderation(commands.Cog):
             await ctx.channel.send("Incorrect Format")
             return
 
-
         # if start_time - datetime.timedelta(minutes=5) < now:
         #     await ctx.channel.category.create_voice_channel(f"{ctx.channel.name} study session", overwrites=ctx.channel.overwrites, position=ctx.channel.position + 1)
         # else:
         #     print('d')
         #     await asyncio.sleep(((start_time-datetime.timedelta(minutes=5))-now).seconds)
         #     await ctx.channel.category.create_voice_channel(f"{ctx.channel.name} study session", overwrites=ctx.channel.overwrites, position=ctx.channel.position + 1)
-        vc = await ctx.channel.category.create_voice_channel(f"{ctx.channel.name} study session", overwrites=ctx.channel.overwrites, position=ctx.channel.position + 1)
-        await asyncio.sleep(length*60)
+        vc = await ctx.channel.category.create_voice_channel(f"{ctx.channel.name} study session",
+                                                             overwrites=ctx.channel.overwrites,
+                                                             position=ctx.channel.position + 1)
+        await asyncio.sleep(length * 60)
         await vc.delete()
+
+
 def setup(bot):
     bot.add_cog(Moderation(bot))

@@ -19,6 +19,7 @@ options = [
     discord.SelectOption(label="Scissors", value="scissors",
                          description="A classic weapon which easily pierces through paper")]
 erps_games = []
+counting_json = "data/counting.json"
 
 
 def get_user_from_mention(user: str, bot: discord.ext.commands.Bot) -> Optional[discord.User]:
@@ -45,14 +46,14 @@ class Fun(commands.Cog):
     async def start_counting(self, ctx: commands.Context):
         """initiate counting"""
         try:
-            with open("counting.json") as file:
+            with open(counting_json) as file:
                 json.load(file)
         except (FileNotFoundError, json.JSONDecodeError):
-            with open("counting.json", "w") as file:
+            with open(counting_json, "w") as file:
                 json.dump({}, file)
 
         counting = None
-        with open("counting.json", 'r') as f:
+        with open(counting_json, 'r') as f:
             counting = json.load(f)
 
         guild_id = str(ctx.guild.id)
@@ -67,11 +68,11 @@ class Fun(commands.Cog):
             await ctx.send("this channel is already being counted...")
             return
 
-        with open("counting.json", 'w') as f:
+        with open(counting_json, 'w') as f:
             json.dump(counting, f, indent=4)
 
     async def end_counting(self, channel: discord.TextChannel):
-        with open("counting.json", 'r') as f:
+        with open(counting_json, 'r') as f:
             counting = json.load(f)
         guild_id = str(channel.guild.id)
         channel_id = str(channel.id)
@@ -79,7 +80,7 @@ class Fun(commands.Cog):
             counting[guild_id].pop(channel_id)
         else:
             await channel.send("The channel isn't being used for counting right now.")
-        with open("counting.json", 'w') as f:
+        with open(counting_json, 'w') as f:
             json.dump(counting, f, indent=4)
 
     @commands.command(name='stopcounting',
@@ -88,11 +89,22 @@ class Fun(commands.Cog):
     @commands.has_permissions(manage_channels=True)
     async def stop_counting(self, ctx: commands.Context):
         """stop counting"""
+        try:
+            with open(counting_json) as file:
+                json.load(file)
+        except (FileNotFoundError, json.JSONDecodeError):
+            await ctx.channel.send("The channel isn't being used for counting right now.")
+            return
         await self.end_counting(ctx.channel)
 
     @commands.Cog.listener()
     async def on_guild_channel_delete(self, channel: discord.TextChannel):
-        with open("counting.json", 'r') as f:
+        try:
+            with open(counting_json) as file:
+                json.load(file)
+        except (FileNotFoundError, json.JSONDecodeError):
+            return
+        with open(counting_json, 'r') as f:
             counting = json.load(f)
         guild_id = str(channel.guild.id)
         channel_id = str(channel.id)
@@ -100,9 +112,12 @@ class Fun(commands.Cog):
             await self.end_counting(channel)
 
     async def count(self, message):
-        if not exists("counting.json"):
+        try:
+            with open(counting_json) as file:
+                json.load(file)
+        except (FileNotFoundError, json.JSONDecodeError):
             return
-        with open("counting.json", 'r') as f:
+        with open(counting_json, 'r') as f:
             counting = json.load(f)
         guild_id = str(message.guild.id)
         channel_id = str(message.channel.id)
@@ -127,7 +142,7 @@ class Fun(commands.Cog):
                 counting[guild_id][channel_id]['last_user'] = None
             else:
                 await message.channel.send('something went wrong')
-            with open("counting.json", 'w') as f:
+            with open(counting_json, 'w') as f:
                 json.dump(counting, f, indent=4)
 
     @commands.command(name='tictactoe',
