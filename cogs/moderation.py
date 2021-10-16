@@ -278,7 +278,14 @@ class Moderation(commands.Cog):
                       description='Creates and schedules a study session')  # the rest of this cog is for self role
     @commands.has_permissions(manage_channels=True, manage_roles=True)
     async def studysession(self, ctx):
-        now = datetime.datetime.now()
+        words = ctx.message.content.split(' ')
+        length = None
+        if len(words) > 1:
+            if len(words) == 2:
+                length = words[1]
+            else:
+                await ctx.send("Please only use 1 argument")
+        # now = datetime.datetime.now()
         # await ctx.channel.send("type the starting time of the study session(use military time for now)")
         def check(msg):
             if msg.author == ctx.author:
@@ -295,11 +302,14 @@ class Moderation(commands.Cog):
         # if start_time < now:
         #     start_time += datetime.timedelta(days=1)
 
-        await ctx.channel.send("type the length of the study session(minutes)")
-        message = await self.bot.wait_for('message', check=check)
+        if length is None:
+            await ctx.channel.send("type the length of the study session(minutes)")
+            length = await self.bot.wait_for('message', check=check)
+            length = length.content
         try:
-            length = int(message.content)
+            length = int(length)
         except TypeError:
+            print(length)
             await ctx.channel.send("Incorrect Format")
             return
 

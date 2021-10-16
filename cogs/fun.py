@@ -1,5 +1,7 @@
 import asyncio
+import json
 import random
+from os.path import exists
 from typing import Optional
 
 import discord
@@ -35,6 +37,98 @@ class Fun(commands.Cog):
 
     def __init__(self, bot):
         self.bot = bot
+
+    @commands.command(name='startcounting',
+                      aliases=['begincounting', 'startcount', 'countstart', 'begincount', 'countbegin'],
+                      description='Begin counting in the current channel')
+    @commands.has_permissions(manage_channels=True)
+    async def start_counting(self, ctx: commands.Context):
+        """initiate counting"""
+        try:
+            with open("counting.json") as file:
+                json.load(file)
+        except (FileNotFoundError, json.JSONDecodeError):
+            with open("counting.json", "w") as file:
+                json.dump({}, file)
+
+        counting = None
+        with open("counting.json", 'r') as f:
+            counting = json.load(f)
+
+        guild_id = str(ctx.guild.id)
+        channel_id = str(ctx.channel.id)
+        if guild_id not in counting:
+            counting[guild_id] = {}
+        if channel_id not in counting[guild_id]:
+            counting[guild_id][channel_id] = {"number": 0, "last_user": None}
+            await ctx.send("Counting has begun! Begin at 1.")
+
+        else:
+            await ctx.send("this channel is already being counted...")
+            return
+
+        with open("counting.json", 'w') as f:
+            json.dump(counting, f, indent=4)
+
+    async def end_counting(self, channel: discord.TextChannel):
+        with open("counting.json", 'r') as f:
+            counting = json.load(f)
+        guild_id = str(channel.guild.id)
+        channel_id = str(channel.id)
+        if guild_id in counting and channel_id in counting[guild_id]:
+            counting[guild_id].pop(channel_id)
+        else:
+            await channel.send("The channel isn't being used for counting right now.")
+        with open("counting.json", 'w') as f:
+            json.dump(counting, f, indent=4)
+
+    @commands.command(name='stopcounting',
+                      aliases=['quitcounting', 'stopcount', 'quitcount', 'countstop'],
+                      description='Stop counting in the current channel')
+    @commands.has_permissions(manage_channels=True)
+    async def stop_counting(self, ctx: commands.Context):
+        """stop counting"""
+        await self.end_counting(ctx.channel)
+
+    @commands.Cog.listener()
+    async def on_guild_channel_delete(self, channel: discord.TextChannel):
+        with open("counting.json", 'r') as f:
+            counting = json.load(f)
+        guild_id = str(channel.guild.id)
+        channel_id = str(channel.id)
+        if guild_id in counting and channel_id in counting[guild_id]:
+            await self.end_counting(channel)
+
+    async def count(self, message):
+        if not exists("counting.json"):
+            return
+        with open("counting.json", 'r') as f:
+            counting = json.load(f)
+        guild_id = str(message.guild.id)
+        channel_id = str(message.channel.id)
+        if guild_id in counting and channel_id in counting[guild_id]:
+            try:
+                attempt = int(message.content)
+            except ValueError:
+                return
+            if message.author.id == counting[guild_id][channel_id]['last_user']:
+                await message.add_reaction("❌")
+                await message.channel.send(f"{message.author.mention} sent a number twice in a row! Restart at 1.")
+                counting[guild_id][channel_id]['number'] = 0
+                counting[guild_id][channel_id]['last_user'] = None
+            elif attempt == counting[guild_id][channel_id]['number'] + 1:
+                counting[guild_id][channel_id]['number'] += 1
+                counting[guild_id][channel_id]['last_user'] = message.author.id
+                await message.add_reaction("✅")
+            elif attempt != counting[guild_id][channel_id]['number'] + 1:
+                await message.add_reaction("❌")
+                await message.channel.send(f"{message.author.mention} doesn't know how to count! Restart at 1.")
+                counting[guild_id][channel_id]['number'] = 0
+                counting[guild_id][channel_id]['last_user'] = None
+            else:
+                await message.channel.send('something went wrong')
+            with open("counting.json", 'w') as f:
+                json.dump(counting, f, indent=4)
 
     @commands.command(name='tictactoe',
                       aliases=['Tic', 'Tac', 'tic', 'tac', 'TicTacToe'],
@@ -166,8 +260,7 @@ class Fun(commands.Cog):
         await game.start()
         erps_games.remove(game)
 
-    @commands.Cog.listener()
-    async def on_message(self, message: discord.Message):
+    async def dad_bot(self, message):
         if message.author == self.bot.user or message.author.bot:
             return
         dad = None
@@ -177,6 +270,11 @@ class Fun(commands.Cog):
                 dad = message.content.lower().index(i) + len(i) + 1
         if dad is not None:
             await message.channel.send(f"Hi {message.content[dad:]}, im Mikebot")
+
+    @commands.Cog.listener()
+    async def on_message(self, message: discord.Message):
+        await self.dad_bot(message)
+        await self.count(message)
 
 
 def setup(bot):
