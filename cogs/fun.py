@@ -95,7 +95,9 @@ class Fun(commands.Cog):
         except (FileNotFoundError, json.JSONDecodeError):
             await ctx.channel.send("The channel isn't being used for counting right now.")
             return
+
         await self.end_counting(ctx.channel)
+        await ctx.channel.send("This channel no longer tracks counting.")
 
     @commands.Cog.listener()
     async def on_guild_channel_delete(self, channel: discord.TextChannel):
