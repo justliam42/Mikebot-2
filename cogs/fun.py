@@ -1,10 +1,10 @@
 import asyncio
 import json
 import random
-from os.path import exists
 from typing import Optional
 
 import discord
+import requests
 from discord.ext import commands
 
 from cogs.extra.TicTacToe import TicTacToe
@@ -38,6 +38,27 @@ class Fun(commands.Cog):
 
     def __init__(self, bot):
         self.bot = bot
+
+    @commands.command(name='mcsrvstat',
+                      aliases=['mcsrv', 'mcserver', 'mcsvr'],
+                      description='get the info of a minecraft server',
+                      usage='[server ip]')
+    async def mcsrvstat(self, ctx: commands.Context, ip):
+        data = requests.get('http://api.mcsrvstat.us/2/' + ip).json()
+        if not data['debug']['ping']:
+            data = requests.get('http://api.mcsrvstat.us/2/' + ip + '.just42.me').json()
+            ip = ip + '.just42.me'
+            if not data['debug']['ping']:
+                await ctx.send("failed to ping server ip")
+                return
+        content = f"**motd:** {data['motd']['clean'][0]}\n**version**:{data['version']}\n**players online({data['players']['online']}/{data['players']['max']}):**"
+        try:
+            for i in data['players']['list']:
+                content += ('\n' + i)
+        except KeyError:
+            pass
+        embed = discord.Embed(title=ip + " status:", description=content)
+        await ctx.send(embed=embed)
 
     @commands.command(name='startcounting',
                       aliases=['begincounting', 'startcount', 'countstart', 'begincount', 'countbegin'],
