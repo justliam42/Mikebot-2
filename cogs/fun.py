@@ -51,7 +51,7 @@ class Fun(commands.Cog):
             if not data['debug']['ping']:
                 await ctx.send("failed to ping server ip")
                 return
-        content = f"**motd:** {data['motd']['clean'][0]}\n**version**:{data['version']}\n**players online({data['players']['online']}/{data['players']['max']}):**"
+        content = f"**motd:** {data['motd']['clean'][0]}\n**version**: {data['version']}\n**players online({data['players']['online']}/{data['players']['max']}):**"
         try:
             for i in data['players']['list']:
                 content += ('\n' + i)
