@@ -47,7 +47,7 @@ def get_mcsrvstat_embed(ip: str):
             status = server.status(tries=1)
         except socket.gaierror:
             return None, ip
-    content = f"**ip: **{ip}\n**motd:** {status.description}\n**version**: {status.version.name}\n**players online({status.players.online}/{status.players.max}):**"
+    content = f"**ip: **{ip}\n**motd:** {status.description}\n**version**: {status.version.name}\n**ping:**{status.latency}ms\n**players online({status.players.online}/{status.players.max}):**"
     if status.players.sample is not None:
         for i in status.players.sample:
             content += ('\n' + i.name)
