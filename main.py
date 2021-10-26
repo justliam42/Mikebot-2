@@ -1,21 +1,19 @@
-import discord
 import os
+
+import discord
 from discord.ext import commands
 from dotenv import load_dotenv
-import asyncio
 
 load_dotenv()
 TOKEN = os.getenv('DISCORD_TOKEN')
 
 intents = discord.Intents.all()
 description = "The Revival of Mikebot"
-version = 2.0
+version = 2.1
 bot = commands.Bot(command_prefix=commands.when_mentioned_or('?'), description=description, intents=intents)
 
 initial_extensions = ['cogs.moderation', 'cogs.owner', 'cogs.fun']
-if __name__ == __name__:  # loading the cogs
-    for extension in initial_extensions:
-        bot.load_extension(extension)
+
 
 
 @bot.event
@@ -27,5 +25,9 @@ async def on_ready():
         os.mkdir('data')
     help_command = bot.get_command('help')
     help_command.hidden = True
+
+    await bot.wait_until_ready()
+    for extension in initial_extensions:
+        bot.load_extension(extension)
 
 bot.run(TOKEN)
