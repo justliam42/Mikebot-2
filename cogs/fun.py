@@ -2,12 +2,11 @@ import asyncio
 import json
 import random
 import socket
-from pprint import pprint
 from typing import Optional
-from mcstatus import MinecraftServer
+
 import discord
-import requests
 from discord.ext import commands, tasks
+from mcstatus import MinecraftServer
 
 from cogs.extra.TicTacToe import TicTacToe
 from cogs.extra.erpsLib import erps_game
@@ -24,6 +23,7 @@ erps_games = []
 counting_json = "data/counting.json"
 mcsrvstat_json = "data/mcsrvstat.json"
 
+
 def get_user_from_mention(user: str, bot: discord.ext.commands.Bot) -> Optional[discord.User]:
     user = str(user)
     if len(user) > 0:
@@ -35,7 +35,8 @@ def get_user_from_mention(user: str, bot: discord.ext.commands.Bot) -> Optional[
         return None
     return bot.get_user(user_id)
 
-def get_mcsrvstat_embed(ip:str):
+
+def get_mcsrvstat_embed(ip: str):
     server = MinecraftServer.lookup(ip)
     try:
         status = server.status(tries=1)
@@ -46,12 +47,14 @@ def get_mcsrvstat_embed(ip:str):
             status = server.status(tries=1)
         except socket.gaierror:
             return None, ip
-    content = f"**motd:** {status.description}\n**version**: {status.version.name}\n**players online({status.players.online}/{status.players.max}):**"
+    content = f"**ip:**{ip}\n**motd:** {status.description}\n**version**: {status.version.name}\n**players online({status.players.online}/{status.players.max}):**"
     if status.players.sample is not None:
         for i in status.players.sample:
             content += ('\n' + i.name)
     embed = discord.Embed(title=ip + " status:", description=content)
     return embed, ip
+
+
 class Fun(commands.Cog):
 
     def __init__(self, bot):
@@ -60,6 +63,7 @@ class Fun(commands.Cog):
 
     def cog_unload(self):
         self.dynamic_mcstat_update.cancel()
+
     @commands.command(name='mcsrvstat',
                       aliases=['mcsrv', 'mcserver', 'mcsvr', 'mcstat'],
                       description='get the info of a minecraft server',
@@ -71,7 +75,7 @@ class Fun(commands.Cog):
             return
         await ctx.send(embed=embed)
 
-    @tasks.loop(seconds=15)
+    @tasks.loop(seconds=20)
     async def dynamic_mcstat_update(self):
         try:
             with open(mcsrvstat_json) as file:
@@ -121,9 +125,9 @@ class Fun(commands.Cog):
         message = await ctx.send(embed=embed)
         srvstat[guild_id][channel_id][str(message.id)] = ip
 
-
         with open(mcsrvstat_json, 'w') as f:
             json.dump(srvstat, f, indent=4)
+
     @commands.command(name='startcounting',
                       aliases=['begincounting', 'startcount', 'countstart', 'begincount', 'countbegin'],
                       description='Begin counting in the current channel')
