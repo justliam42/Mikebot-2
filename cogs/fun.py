@@ -51,7 +51,7 @@ def get_mcsrvstat_embed(ip: str):
     if status.players.sample is not None:
         for i in status.players.sample:
             content += ('\n' + i.name)
-    embed = discord.Embed(title=ip + " status:", description=content)
+    embed = discord.Embed(title=ip + " status:", description=content, color=discord.Color.green())
     return embed, ip
 
 
@@ -93,7 +93,10 @@ class Fun(commands.Cog):
                     message = await channel.fetch_message(int(message_id))
                     ip = srvstat[guild_id][channel_id][message_id]
                     embed, _ = get_mcsrvstat_embed(ip)
-                    await message.edit(embed=embed)
+                    if embed is not None:
+                        await message.edit(embed=embed)
+                    else:
+                        await message.edit(embed=discord.Embed(color=discord.Color.red(), title="Server is Offline"))
 
     @commands.command(name='dynamicmcsrvstat',
                       aliases=['permstat', 'dynmcsrv', 'dynstat', 'permsrvstat', 'dynsrvstat'],
@@ -127,6 +130,43 @@ class Fun(commands.Cog):
 
         with open(mcsrvstat_json, 'w') as f:
             json.dump(srvstat, f, indent=4)
+
+    @commands.Cog.listener()
+    async def on_raw_message_delete(self, payload):
+        try:
+            with open(mcsrvstat_json) as file:
+                json.load(file)
+        except (FileNotFoundError, json.JSONDecodeError):
+            return
+        with open(mcsrvstat_json, 'r') as f:
+            mcsrvstat = json.load(f)
+
+        guild_id = str(payload.guild_id)
+        channel_id = str(payload.channel_id)
+        message_id = str(payload.message_id)
+        if guild_id in mcsrvstat and channel_id in mcsrvstat[guild_id] and message_id in mcsrvstat[guild_id][channel_id]:
+            mcsrvstat[guild_id][channel_id].pop(message_id)
+
+        with open(mcsrvstat_json, 'w') as f:
+            json.dump(mcsrvstat, f, indent=4)
+
+    @commands.Cog.listener()
+    async def on_guild_remove(self, guild):
+        try:
+            with open(mcsrvstat_json) as file:
+                json.load(file)
+        except (FileNotFoundError, json.JSONDecodeError):
+            return
+        with open(mcsrvstat_json, 'r') as f:
+            mcsrvstat = json.load(f)
+
+        guild_id = str(guild.id)
+
+        if guild_id in mcsrvstat:
+            mcsrvstat.pop(guild_id)
+
+        with open(mcsrvstat_json, 'w') as f:
+            json.dump(mcsrvstat, f, indent=4)
 
     @commands.command(name='startcounting',
                       aliases=['begincounting', 'startcount', 'countstart', 'begincount', 'countbegin'],
@@ -188,8 +228,7 @@ class Fun(commands.Cog):
         await self.end_counting(ctx.channel)
         await ctx.channel.send("This channel no longer tracks counting.")
 
-    @commands.Cog.listener()
-    async def on_guild_channel_delete(self, channel: discord.TextChannel):
+    async def on_count_channel_delete(self, channel: discord.TextChannel):
         try:
             with open(counting_json) as file:
                 json.load(file)
@@ -201,6 +240,27 @@ class Fun(commands.Cog):
         channel_id = str(channel.id)
         if guild_id in counting and channel_id in counting[guild_id]:
             await self.end_counting(channel)
+
+    async def on_dynmcsrvstat_channel_delete(self, channel: discord.TextChannel):
+        try:
+            with open(mcsrvstat_json) as file:
+                json.load(file)
+        except (FileNotFoundError, json.JSONDecodeError):
+            return
+        with open(mcsrvstat_json, 'r') as f:
+            mcsrvstat = json.load(f)
+        guild_id = str(channel.guild.id)
+        channel_id = str(channel.id)
+        if guild_id in mcsrvstat and channel_id in mcsrvstat[guild_id]:
+            mcsrvstat[guild_id].pop(channel_id)
+
+        with open(mcsrvstat_json, 'w') as f:
+            json.dump(mcsrvstat, f, indent=4)
+
+    @commands.Cog.listener()
+    async def on_guild_channel_delete(self, channel: discord.TextChannel):
+        await self.on_count_channel_delete(channel)
+        await self.on_dynmcsrvstat_channel_delete(channel)
 
     async def count(self, message):
         try:
